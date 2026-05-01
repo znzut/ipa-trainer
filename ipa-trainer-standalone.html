@@ -1,0 +1,776 @@
+<!DOCTYPE html>
+<html lang="vi">
+<head>
+<meta charset="UTF-8" />
+<meta name="viewport" content="width=device-width, initial-scale=1.0" />
+<title>IPA 44 Sounds Trainer — Luyện 44 âm IPA chuẩn</title>
+<style>
+* { box-sizing: border-box; margin: 0; padding: 0; }
+:root {
+  --primary: #6366f1; --primary-dark: #4f46e5; --accent: #ec4899;
+  --bg: #f8fafc; --card: #fff; --text: #1e293b; --muted: #64748b;
+  --border: #e2e8f0; --success: #10b981; --warning: #f59e0b; --danger: #ef4444;
+  --vowel: #fef3c7; --vowel-border: #fbbf24;
+  --diphthong: #fce7f3; --diphthong-border: #ec4899;
+  --consonant: #dbeafe; --consonant-border: #3b82f6;
+}
+body {
+  font-family: -apple-system,"Segoe UI","Inter","Helvetica Neue","Noto Sans",sans-serif;
+  background: linear-gradient(180deg,#eef2ff 0%,#f8fafc 100%);
+  color: var(--text); min-height: 100vh; padding-bottom: 40px;
+}
+.topbar {
+  background: linear-gradient(135deg,var(--primary) 0%,var(--accent) 100%);
+  color: white; padding: 20px 24px;
+  box-shadow: 0 4px 20px rgba(99,102,241,0.25);
+  position: sticky; top: 0; z-index: 100;
+}
+.brand { display: flex; align-items: center; gap: 14px; margin-bottom: 12px; }
+.logo { font-size: 36px; }
+.brand h1 { font-size: 20px; font-weight: 700; }
+.subtitle { font-size: 12px; opacity: 0.9; margin-top: 2px; }
+.filters { display: flex; flex-wrap: wrap; gap: 6px; }
+.filter-btn {
+  padding: 6px 12px; border-radius: 999px;
+  border: 1px solid rgba(255,255,255,0.4);
+  background: rgba(255,255,255,0.1); color: white;
+  font-size: 12px; font-weight: 500; cursor: pointer;
+  transition: all 0.2s; display: flex; align-items: center; gap: 5px;
+}
+.filter-btn:hover { background: rgba(255,255,255,0.2); }
+.filter-btn.active { background: white; color: var(--primary-dark); font-weight: 600; }
+.count { background: rgba(255,255,255,0.3); padding: 1px 7px; border-radius: 999px; font-size: 10px; }
+.filter-btn.active .count { background: var(--primary); color: white; }
+
+.grid {
+  display: grid; grid-template-columns: repeat(auto-fill, minmax(170px,1fr));
+  gap: 14px; padding: 24px; max-width: 1400px; margin: 0 auto;
+}
+.card {
+  background: var(--card); border-radius: 14px; padding: 16px;
+  border: 2px solid var(--border); cursor: pointer;
+  transition: all 0.25s ease; position: relative; overflow: hidden;
+  text-align: center;
+}
+.card:hover { transform: translateY(-3px); box-shadow: 0 10px 25px rgba(99,102,241,0.18); border-color: var(--primary); }
+.card[data-cat="monophthong"] { background: var(--vowel); border-color: var(--vowel-border); }
+.card[data-cat="diphthong"] { background: var(--diphthong); border-color: var(--diphthong-border); }
+.card[data-cat="consonant"] { background: var(--consonant); border-color: var(--consonant-border); }
+.card .chapter { font-size: 10px; color: var(--muted); font-weight: 600; letter-spacing: 0.5px; text-transform: uppercase; }
+.card .symbol { font-size: 48px; font-weight: 700; margin: 6px 0; color: var(--text); line-height: 1; }
+.card .example { font-size: 13px; color: var(--text); font-weight: 500; margin-top: 4px; }
+.card .example-vi { font-size: 11px; color: var(--muted); margin-top: 2px; }
+.card .quick-listen {
+  position: absolute; top: 10px; right: 10px;
+  background: rgba(255,255,255,0.7); border: none; width: 28px; height: 28px;
+  border-radius: 50%; cursor: pointer; font-size: 12px; transition: all 0.2s;
+}
+.card .quick-listen:hover { background: var(--primary); color: white; transform: scale(1.1); }
+
+.modal {
+  position: fixed; inset: 0; background: rgba(15,23,42,0.7);
+  display: flex; align-items: center; justify-content: center;
+  z-index: 1000; padding: 16px; backdrop-filter: blur(4px);
+}
+.modal.hidden { display: none; }
+.modal-content {
+  background: white; border-radius: 18px; max-width: 880px; width: 100%;
+  max-height: 92vh; overflow-y: auto; position: relative;
+  box-shadow: 0 25px 60px rgba(0,0,0,0.3);
+  animation: slideUp 0.3s ease;
+}
+@keyframes slideUp { from{opacity:0;transform:translateY(30px);} to{opacity:1;transform:translateY(0);} }
+.modal-close {
+  position: absolute; top: 10px; right: 14px; background: none; border: none;
+  font-size: 30px; cursor: pointer; color: white; z-index: 10;
+}
+.modal-close:hover { color: var(--warning); }
+
+.detail-header {
+  background: linear-gradient(135deg,var(--primary) 0%,var(--accent) 100%);
+  color: white; padding: 24px 28px; border-radius: 18px 18px 0 0;
+  display: flex; align-items: center; gap: 20px;
+}
+.detail-header .big-symbol {
+  font-size: 72px; font-weight: 700;
+  background: rgba(255,255,255,0.2); border-radius: 18px;
+  width: 120px; height: 120px;
+  display: flex; align-items: center; justify-content: center; flex-shrink: 0;
+}
+.detail-header h2 { font-size: 20px; margin-bottom: 4px; }
+.detail-header .badge {
+  display: inline-block; padding: 3px 10px;
+  background: rgba(255,255,255,0.25); border-radius: 999px;
+  font-size: 11px; margin-bottom: 6px;
+}
+.detail-header p { opacity: 0.95; font-size: 13px; }
+
+.detail-body { padding: 20px 28px; display: grid; grid-template-columns: 1fr 1fr; gap: 18px; }
+.section { background: #f8fafc; padding: 14px; border-radius: 10px; border: 1px solid var(--border); }
+.section h3 { font-size: 12px; color: var(--muted); margin-bottom: 8px; text-transform: uppercase; letter-spacing: 0.5px; }
+.section p { font-size: 13px; line-height: 1.55; color: var(--text); margin-bottom: 5px; }
+.section .vi { color: var(--primary-dark); }
+.section .tip {
+  background: #fef9c3; padding: 9px 11px; border-radius: 8px;
+  font-size: 12px; margin-top: 8px; border-left: 3px solid var(--warning);
+}
+.mouth-svg-wrap {
+  background: white; border-radius: 10px; border: 1px solid var(--border);
+  padding: 8px; display:flex; align-items:center; justify-content:center;
+  min-height: 200px;
+}
+
+.btn-row { display: flex; gap: 6px; flex-wrap: wrap; margin-top: 10px; }
+.btn {
+  padding: 9px 14px; border: none; border-radius: 9px;
+  cursor: pointer; font-size: 12px; font-weight: 600;
+  display: inline-flex; align-items: center; gap: 5px; transition: all 0.2s;
+}
+.btn-primary { background: var(--primary); color: white; }
+.btn-primary:hover { background: var(--primary-dark); transform: translateY(-1px); }
+.btn-record { background: var(--danger); color: white; }
+.btn-record.recording { animation: pulse 1.2s infinite; }
+@keyframes pulse {
+  0%,100% { box-shadow: 0 0 0 0 rgba(239,68,68,0.7); }
+  50% { box-shadow: 0 0 0 10px rgba(239,68,68,0); }
+}
+.btn-secondary { background: white; color: var(--text); border: 1px solid var(--border); }
+.btn-secondary:hover { background: var(--bg); }
+.btn:disabled { opacity: 0.5; cursor: not-allowed; }
+
+.practice-block { grid-column: 1 / -1; background: white; }
+.canvas-wrapper { background: #0f172a; border-radius: 10px; padding: 10px; margin-top: 8px; }
+.canvas-label { color: #94a3b8; font-size: 10px; margin-bottom: 4px; font-weight: 600; }
+canvas { display: block; width: 100%; height: 70px; }
+canvas.spectrogram { height: 100px; }
+
+.score-box {
+  margin-top: 14px;
+  background: linear-gradient(135deg,#f8fafc 0%,#e0e7ff 100%);
+  border-radius: 10px; padding: 14px; text-align: center;
+  border: 2px solid var(--border);
+}
+.score-box.hidden { display: none; }
+.score-num { font-size: 42px; font-weight: 700; color: var(--primary); }
+.score-label { font-size: 12px; color: var(--muted); }
+.score-bar {
+  width: 100%; height: 10px; background: var(--border);
+  border-radius: 999px; overflow: hidden; margin-top: 8px;
+}
+.score-fill {
+  height: 100%; transition: width 0.6s ease;
+  background: linear-gradient(90deg,var(--danger) 0%,var(--warning) 50%,var(--success) 100%);
+}
+.score-feedback { margin-top: 8px; font-size: 12px; font-weight: 500; }
+.status { font-size: 11px; color: var(--muted); margin-top: 5px; }
+.status.error { color: var(--danger); }
+.footer { text-align: center; color: var(--muted); font-size: 11px; padding: 20px; }
+.notice {
+  background: #fef9c3; border: 1px solid #fbbf24;
+  padding: 10px 14px; margin: 12px 24px; border-radius: 8px;
+  font-size: 12px; color: #92400e;
+}
+@media (max-width: 720px) {
+  .detail-body { grid-template-columns: 1fr; }
+  .detail-header { flex-direction: column; text-align: center; padding: 18px; }
+  .detail-header .big-symbol { width: 88px; height: 88px; font-size: 50px; }
+  .grid { padding: 14px; gap: 10px; grid-template-columns: repeat(auto-fill, minmax(140px,1fr)); }
+  .card .symbol { font-size: 38px; }
+}
+</style>
+<script type="text/javascript" nonce="ffc963c6a7634d4d9e396896c48" src="//local.adguard.org?ts=1777644845999&amp;type=content-script&amp;dmn=www.genspark.ai&amp;url=https%3A%2F%2Fwww.genspark.ai%2Fapi%2Fcode_sandbox%2Fdownload_file%3Fproject_id%3D305ba788-e66b-498c-9374-bb9291c126a2%26path%3D%252Fmnt%252Fuser-data%252Foutputs%252Fipa-trainer-standalone.html%26enable_backup%3Dtrue%26enable_recovery%3Dtrue&amp;app=msedge.exe&amp;css=3&amp;js=1&amp;rel=1&amp;rji=1&amp;sbe=1"></script><script type="text/javascript" nonce="ffc963c6a7634d4d9e396896c48" src="//local.adguard.org?ts=1777644845999&amp;name=AdGuard%20Extra&amp;name=AdGuard%20Popup%20Blocker&amp;type=user-script"></script></head>
+<body>
+
+<header class="topbar">
+  <div class="brand">
+    <span class="logo">🗣️</span>
+    <div>
+      <h1>IPA 44 Sounds Trainer</h1>
+      <p class="subtitle">Luyện 44 âm IPA chuẩn · Pronunciation Trainer (Standalone)</p>
+    </div>
+  </div>
+  <div class="filters">
+    <button class="filter-btn active" data-filter="all">Tất cả · All <span class="count">44</span></button>
+    <button class="filter-btn" data-filter="monophthong">Nguyên âm đơn · Monophthongs <span class="count">12</span></button>
+    <button class="filter-btn" data-filter="diphthong">Nguyên âm đôi · Diphthongs <span class="count">8</span></button>
+    <button class="filter-btn" data-filter="consonant">Phụ âm · Consonants <span class="count">24</span></button>
+  </div>
+</header>
+
+<div class="notice">
+  💡 <b>Hướng dẫn:</b> Bấm vào từng âm để xem khẩu hình &amp; mô tả · Bấm <b>🔊 Nghe từ mẫu</b> · Bấm <b>🔴 Bắt đầu ghi âm</b> để đọc theo · Bấm <b>📊 Phân tích</b> để xem điểm.
+  Khuyến nghị dùng <b>Chrome/Edge</b> để có Web Speech API + MediaRecorder.
+</div>
+
+<main id="grid" class="grid"></main>
+
+<div id="modal" class="modal hidden">
+  <div class="modal-content">
+    <button class="modal-close" id="closeModal">×</button>
+    <div id="modalBody"></div>
+  </div>
+</div>
+
+<footer class="footer">
+  <p>© 2026 IPA Trainer · Standalone Edition · Made with ❤️ by Genspark for Nhợt</p>
+</footer>
+
+<script>
+/* ============================================================
+   DỮ LIỆU 44 ÂM IPA - SONG NGỮ VIỆT-ANH
+   ============================================================ */
+const IPA_DATA = [
+  { id:1, symbol:"iː", category:"monophthong", group:"vowel_close_front", example:"see", exampleIPA:"/siː/", exampleVI:"see (nhìn thấy)",
+    descriptionEN:"Long close front unrounded vowel. Spread lips wide.", descriptionVI:"Nguyên âm dài, lưỡi cao phía trước. Môi căng rộng.",
+    tipVI:"Kéo dài âm, môi căng sang hai bên, như 'i' tiếng Việt nhưng dài hơn." },
+  { id:2, symbol:"ɪ", category:"monophthong", group:"vowel_close_front", example:"sit", exampleIPA:"/sɪt/", exampleVI:"sit (ngồi)",
+    descriptionEN:"Short near-close front unrounded vowel.", descriptionVI:"Nguyên âm ngắn, lưỡi gần cao phía trước. Môi thả lỏng.",
+    tipVI:"Âm ngắn, không kéo dài. Giống 'i' tiếng Việt nhưng ngắn và lười hơn." },
+  { id:3, symbol:"e", category:"monophthong", group:"vowel_open_front", example:"bed", exampleIPA:"/bed/", exampleVI:"bed (giường)",
+    descriptionEN:"Mid front unrounded vowel.", descriptionVI:"Nguyên âm giữa phía trước. Miệng mở vừa phải.",
+    tipVI:"Giống 'e' trong từ 'em' tiếng Việt." },
+  { id:4, symbol:"æ", category:"monophthong", group:"vowel_open_front", example:"cat", exampleIPA:"/kæt/", exampleVI:"cat (con mèo)",
+    descriptionEN:"Near-open front unrounded vowel.", descriptionVI:"Nguyên âm gần mở phía trước. Miệng mở rộng, hạ hàm.",
+    tipVI:"Giữa 'a' và 'e' tiếng Việt. Mở miệng rộng và hơi cười." },
+  { id:5, symbol:"ɑː", category:"monophthong", group:"vowel_open_back", example:"car", exampleIPA:"/kɑː/", exampleVI:"car (xe hơi)",
+    descriptionEN:"Long open back unrounded vowel.", descriptionVI:"Nguyên âm mở dài phía sau, không tròn môi.",
+    tipVI:"Giống 'a' tiếng Việt nhưng kéo dài, lưỡi lùi sâu về sau." },
+  { id:6, symbol:"ɒ", category:"monophthong", group:"vowel_back_round", example:"hot", exampleIPA:"/hɒt/", exampleVI:"hot (nóng)",
+    descriptionEN:"Short open back rounded vowel.", descriptionVI:"Nguyên âm ngắn, mở phía sau, môi tròn.",
+    tipVI:"Giống 'o' tiếng Việt nhưng ngắn, môi hơi tròn." },
+  { id:7, symbol:"ɔː", category:"monophthong", group:"vowel_back_round", example:"saw", exampleIPA:"/sɔː/", exampleVI:"saw (nhìn thấy - QK)",
+    descriptionEN:"Long open-mid back rounded vowel.", descriptionVI:"Nguyên âm dài, môi tròn rõ.",
+    tipVI:"Giống 'o' kéo dài, môi tròn nhô về phía trước." },
+  { id:8, symbol:"ʊ", category:"monophthong", group:"vowel_back_round", example:"put", exampleIPA:"/pʊt/", exampleVI:"put (đặt)",
+    descriptionEN:"Short near-close back rounded vowel.", descriptionVI:"Nguyên âm ngắn, môi tròn nhẹ.",
+    tipVI:"Giống 'u' tiếng Việt nhưng ngắn và lười, môi tròn nhẹ." },
+  { id:9, symbol:"uː", category:"monophthong", group:"vowel_back_round", example:"blue", exampleIPA:"/bluː/", exampleVI:"blue (màu xanh)",
+    descriptionEN:"Long close back rounded vowel.", descriptionVI:"Nguyên âm dài, lưỡi cao phía sau, môi tròn rõ.",
+    tipVI:"Giống 'u' tiếng Việt nhưng kéo dài, môi tròn nhô ra trước." },
+  { id:10, symbol:"ʌ", category:"monophthong", group:"vowel_open_back", example:"cup", exampleIPA:"/kʌp/", exampleVI:"cup (cốc)",
+    descriptionEN:"Open-mid back unrounded vowel.", descriptionVI:"Nguyên âm giữa phía sau, không tròn môi.",
+    tipVI:"Giống 'â' trong tiếng Việt, ngắn và gọn." },
+  { id:11, symbol:"ɜː", category:"monophthong", group:"vowel_open_front", example:"her", exampleIPA:"/hɜː/", exampleVI:"her (cô ấy)",
+    descriptionEN:"Long mid central unrounded vowel.", descriptionVI:"Nguyên âm dài, lưỡi giữa, không tròn môi.",
+    tipVI:"Giống 'ơ' tiếng Việt kéo dài, miệng mở vừa." },
+  { id:12, symbol:"ə", category:"monophthong", group:"vowel_open_front", example:"about", exampleIPA:"/əˈbaʊt/", exampleVI:"about (về)",
+    descriptionEN:"Schwa - mid central unrounded vowel.", descriptionVI:"Schwa - âm trung tính, mọi cơ quan thả lỏng. Phổ biến nhất.",
+    tipVI:"Âm 'ơ' rất ngắn, lười, không nhấn. Xuất hiện ở âm tiết không nhấn." },
+
+  { id:13, symbol:"eɪ", category:"diphthong", group:"diphthong", example:"day", exampleIPA:"/deɪ/", exampleVI:"day (ngày)",
+    descriptionEN:"Diphthong from /e/ to /ɪ/.", descriptionVI:"Nguyên âm đôi từ /e/ sang /ɪ/.",
+    tipVI:"Đọc 'ê-i' liền mạch, bắt đầu từ 'ê' chuyển sang 'i'." },
+  { id:14, symbol:"aɪ", category:"diphthong", group:"diphthong", example:"my", exampleIPA:"/maɪ/", exampleVI:"my (của tôi)",
+    descriptionEN:"Diphthong from /a/ to /ɪ/.", descriptionVI:"Nguyên âm đôi từ /a/ sang /ɪ/.",
+    tipVI:"Đọc 'ai' như tiếng Việt, miệng mở rồi khép dần." },
+  { id:15, symbol:"ɔɪ", category:"diphthong", group:"diphthong", example:"boy", exampleIPA:"/bɔɪ/", exampleVI:"boy (cậu bé)",
+    descriptionEN:"Diphthong from /ɔ/ to /ɪ/.", descriptionVI:"Nguyên âm đôi từ /ɔ/ sang /ɪ/.",
+    tipVI:"Đọc 'oi' như tiếng Việt, môi tròn rồi mở căng." },
+  { id:16, symbol:"aʊ", category:"diphthong", group:"diphthong", example:"now", exampleIPA:"/naʊ/", exampleVI:"now (bây giờ)",
+    descriptionEN:"Diphthong from /a/ to /ʊ/.", descriptionVI:"Nguyên âm đôi từ /a/ sang /ʊ/.",
+    tipVI:"Đọc 'ao' như tiếng Việt, môi mở rồi tròn lại." },
+  { id:17, symbol:"əʊ", category:"diphthong", group:"diphthong", example:"go", exampleIPA:"/ɡəʊ/", exampleVI:"go (đi)",
+    descriptionEN:"Diphthong from /ə/ to /ʊ/.", descriptionVI:"Nguyên âm đôi từ /ə/ sang /ʊ/.",
+    tipVI:"Đọc 'ơ-u', bắt đầu từ 'ơ' chuyển sang 'u' với môi tròn dần." },
+  { id:18, symbol:"ɪə", category:"diphthong", group:"diphthong", example:"ear", exampleIPA:"/ɪə/", exampleVI:"ear (tai)",
+    descriptionEN:"Diphthong from /ɪ/ to /ə/.", descriptionVI:"Nguyên âm đôi từ /ɪ/ sang /ə/.",
+    tipVI:"Đọc 'i-ơ', miệng từ căng sang thả lỏng." },
+  { id:19, symbol:"eə", category:"diphthong", group:"diphthong", example:"air", exampleIPA:"/eə/", exampleVI:"air (không khí)",
+    descriptionEN:"Diphthong from /e/ to /ə/.", descriptionVI:"Nguyên âm đôi từ /e/ sang /ə/.",
+    tipVI:"Đọc 'e-ơ', miệng từ mở vừa sang thả lỏng." },
+  { id:20, symbol:"ʊə", category:"diphthong", group:"diphthong", example:"tour", exampleIPA:"/tʊə/", exampleVI:"tour (chuyến đi)",
+    descriptionEN:"Diphthong from /ʊ/ to /ə/.", descriptionVI:"Nguyên âm đôi từ /ʊ/ sang /ə/.",
+    tipVI:"Đọc 'u-ơ', môi tròn rồi thả lỏng." },
+
+  { id:21, symbol:"p", category:"consonant", group:"bilabial", example:"pen", exampleIPA:"/pen/", exampleVI:"pen (bút)",
+    descriptionEN:"Voiceless bilabial plosive.", descriptionVI:"Phụ âm bật vô thanh, hai môi.",
+    tipVI:"Khép chặt hai môi, bật ra mạnh, có hơi gió. Không rung dây thanh." },
+  { id:22, symbol:"b", category:"consonant", group:"bilabial", example:"book", exampleIPA:"/bʊk/", exampleVI:"book (sách)",
+    descriptionEN:"Voiced bilabial plosive.", descriptionVI:"Phụ âm bật hữu thanh, hai môi.",
+    tipVI:"Khép môi như /p/ nhưng có rung dây thanh, đặt tay lên cổ thấy rung." },
+  { id:23, symbol:"t", category:"consonant", group:"alveolar", example:"ten", exampleIPA:"/ten/", exampleVI:"ten (mười)",
+    descriptionEN:"Voiceless alveolar plosive.", descriptionVI:"Phụ âm bật vô thanh, đầu lưỡi chạm lợi.",
+    tipVI:"Đầu lưỡi chạm vào chân răng trên, bật mạnh, có hơi gió." },
+  { id:24, symbol:"d", category:"consonant", group:"alveolar", example:"dog", exampleIPA:"/dɒɡ/", exampleVI:"dog (chó)",
+    descriptionEN:"Voiced alveolar plosive.", descriptionVI:"Phụ âm bật hữu thanh, đầu lưỡi chạm lợi.",
+    tipVI:"Như /t/ nhưng rung dây thanh." },
+  { id:25, symbol:"k", category:"consonant", group:"velar", example:"key", exampleIPA:"/kiː/", exampleVI:"key (chìa khoá)",
+    descriptionEN:"Voiceless velar plosive.", descriptionVI:"Phụ âm bật vô thanh, gốc lưỡi chạm vòm mềm.",
+    tipVI:"Gốc lưỡi đẩy lên vòm mềm rồi bật ra, có hơi gió." },
+  { id:26, symbol:"ɡ", category:"consonant", group:"velar", example:"go", exampleIPA:"/ɡəʊ/", exampleVI:"go (đi)",
+    descriptionEN:"Voiced velar plosive.", descriptionVI:"Phụ âm bật hữu thanh, gốc lưỡi chạm vòm mềm.",
+    tipVI:"Như /k/ nhưng có rung dây thanh." },
+  { id:27, symbol:"f", category:"consonant", group:"labiodental", example:"fish", exampleIPA:"/fɪʃ/", exampleVI:"fish (cá)",
+    descriptionEN:"Voiceless labiodental fricative.", descriptionVI:"Phụ âm xát vô thanh, răng môi.",
+    tipVI:"Răng trên chạm môi dưới, đẩy hơi qua khe, không rung." },
+  { id:28, symbol:"v", category:"consonant", group:"labiodental", example:"voice", exampleIPA:"/vɔɪs/", exampleVI:"voice (giọng nói)",
+    descriptionEN:"Voiced labiodental fricative.", descriptionVI:"Phụ âm xát hữu thanh, răng môi.",
+    tipVI:"Như /f/ nhưng có rung dây thanh." },
+  { id:29, symbol:"θ", category:"consonant", group:"dental", example:"think", exampleIPA:"/θɪŋk/", exampleVI:"think (nghĩ)",
+    descriptionEN:"Voiceless dental fricative.", descriptionVI:"Phụ âm xát vô thanh, đầu lưỡi giữa hai hàm răng.",
+    tipVI:"Đặt đầu lưỡi nhô ra giữa hai hàm răng, đẩy hơi qua, không rung." },
+  { id:30, symbol:"ð", category:"consonant", group:"dental", example:"this", exampleIPA:"/ðɪs/", exampleVI:"this (cái này)",
+    descriptionEN:"Voiced dental fricative.", descriptionVI:"Phụ âm xát hữu thanh, đầu lưỡi giữa hai hàm răng.",
+    tipVI:"Như /θ/ nhưng có rung dây thanh." },
+  { id:31, symbol:"s", category:"consonant", group:"alveolar", example:"see", exampleIPA:"/siː/", exampleVI:"see (nhìn)",
+    descriptionEN:"Voiceless alveolar fricative.", descriptionVI:"Phụ âm xát vô thanh, đầu lưỡi gần lợi.",
+    tipVI:"Đầu lưỡi gần chân răng trên, đẩy hơi tạo tiếng 'sì' kéo dài." },
+  { id:32, symbol:"z", category:"consonant", group:"alveolar", example:"zoo", exampleIPA:"/zuː/", exampleVI:"zoo (sở thú)",
+    descriptionEN:"Voiced alveolar fricative.", descriptionVI:"Phụ âm xát hữu thanh, đầu lưỡi gần lợi.",
+    tipVI:"Như /s/ nhưng có rung dây thanh, tiếng 'zì'." },
+  { id:33, symbol:"ʃ", category:"consonant", group:"postalveolar", example:"she", exampleIPA:"/ʃiː/", exampleVI:"she (cô ấy)",
+    descriptionEN:"Voiceless postalveolar fricative.", descriptionVI:"Phụ âm xát vô thanh, sau lợi.",
+    tipVI:"Lưỡi nâng cao về phía sau lợi, môi hơi tròn, đẩy hơi tạo 'sh'." },
+  { id:34, symbol:"ʒ", category:"consonant", group:"postalveolar", example:"vision", exampleIPA:"/ˈvɪʒən/", exampleVI:"vision (tầm nhìn)",
+    descriptionEN:"Voiced postalveolar fricative.", descriptionVI:"Phụ âm xát hữu thanh, sau lợi.",
+    tipVI:"Như /ʃ/ nhưng có rung dây thanh, tiếng 'zh'." },
+  { id:35, symbol:"h", category:"consonant", group:"glottal", example:"hat", exampleIPA:"/hæt/", exampleVI:"hat (mũ)",
+    descriptionEN:"Voiceless glottal fricative.", descriptionVI:"Phụ âm xát vô thanh, thanh hầu.",
+    tipVI:"Thở mạnh ra như đang hà hơi vào kính, không rung." },
+  { id:36, symbol:"tʃ", category:"consonant", group:"postalveolar", example:"chair", exampleIPA:"/tʃeə/", exampleVI:"chair (ghế)",
+    descriptionEN:"Voiceless postalveolar affricate.", descriptionVI:"Phụ âm tắc-xát vô thanh.",
+    tipVI:"Kết hợp /t/ rồi /ʃ/ liền mạch, như 'ch' tiếng Việt nhưng mạnh hơn." },
+  { id:37, symbol:"dʒ", category:"consonant", group:"postalveolar", example:"judge", exampleIPA:"/dʒʌdʒ/", exampleVI:"judge (thẩm phán)",
+    descriptionEN:"Voiced postalveolar affricate.", descriptionVI:"Phụ âm tắc-xát hữu thanh.",
+    tipVI:"Như /tʃ/ nhưng có rung dây thanh." },
+  { id:38, symbol:"m", category:"consonant", group:"bilabial", example:"man", exampleIPA:"/mæn/", exampleVI:"man (đàn ông)",
+    descriptionEN:"Voiced bilabial nasal.", descriptionVI:"Phụ âm mũi, hai môi.",
+    tipVI:"Khép môi, hơi đi qua mũi, có rung." },
+  { id:39, symbol:"n", category:"consonant", group:"alveolar", example:"no", exampleIPA:"/nəʊ/", exampleVI:"no (không)",
+    descriptionEN:"Voiced alveolar nasal.", descriptionVI:"Phụ âm mũi, đầu lưỡi chạm lợi.",
+    tipVI:"Đầu lưỡi chạm chân răng trên, hơi đi qua mũi." },
+  { id:40, symbol:"ŋ", category:"consonant", group:"velar", example:"sing", exampleIPA:"/sɪŋ/", exampleVI:"sing (hát)",
+    descriptionEN:"Voiced velar nasal.", descriptionVI:"Phụ âm mũi, gốc lưỡi chạm vòm mềm.",
+    tipVI:"Gốc lưỡi đẩy lên vòm mềm, hơi đi qua mũi, như 'ng' tiếng Việt." },
+  { id:41, symbol:"l", category:"consonant", group:"alveolar", example:"leg", exampleIPA:"/leɡ/", exampleVI:"leg (chân)",
+    descriptionEN:"Voiced alveolar lateral approximant.", descriptionVI:"Phụ âm bên, đầu lưỡi chạm lợi.",
+    tipVI:"Đầu lưỡi chạm chân răng, hơi thoát hai bên lưỡi." },
+  { id:42, symbol:"r", category:"consonant", group:"glottal", example:"red", exampleIPA:"/red/", exampleVI:"red (màu đỏ)",
+    descriptionEN:"Voiced postalveolar approximant.", descriptionVI:"Phụ âm tiếp cận, sau lợi.",
+    tipVI:"Lưỡi cong lên, không chạm vòm, môi hơi tròn. Khác 'r' tiếng Việt." },
+  { id:43, symbol:"j", category:"consonant", group:"glottal", example:"yes", exampleIPA:"/jes/", exampleVI:"yes (vâng)",
+    descriptionEN:"Voiced palatal approximant.", descriptionVI:"Phụ âm tiếp cận, vòm cứng.",
+    tipVI:"Như 'i' chuyển nhanh sang nguyên âm sau, giống 'y' tiếng Việt." },
+  { id:44, symbol:"w", category:"consonant", group:"glottal", example:"we", exampleIPA:"/wiː/", exampleVI:"we (chúng tôi)",
+    descriptionEN:"Voiced labio-velar approximant.", descriptionVI:"Phụ âm tiếp cận, môi và vòm mềm.",
+    tipVI:"Môi tròn nhỏ như chuẩn bị thổi, sau đó mở ra. Giống 'oa' nhanh." }
+];
+
+const CATEGORY_LABEL = {
+  monophthong: { en:"Monophthong", vi:"Nguyên âm đơn" },
+  diphthong:   { en:"Diphthong",   vi:"Nguyên âm đôi" },
+  consonant:   { en:"Consonant",   vi:"Phụ âm" }
+};
+
+/* ============================================================
+   SVG khẩu hình miệng cho 12 nhóm âm
+   ============================================================ */
+function mouthSVG(group) {
+  const labels = {
+    bilabial: { vi:"Hai môi khép · /p/ /b/ /m/", el:"<ellipse cx='150' cy='100' rx='80' ry='8' fill='#fca5a5' stroke='#b91c1c' stroke-width='2'/>" },
+    labiodental: { vi:"Răng-môi · /f/ /v/", el:"<rect x='100' y='80' width='100' height='12' fill='#fde68a' stroke='#92400e'/><ellipse cx='150' cy='110' rx='70' ry='14' fill='#fca5a5' stroke='#b91c1c' stroke-width='2'/>" },
+    dental: { vi:"Lưỡi giữa răng · /θ/ /ð/", el:"<rect x='100' y='80' width='100' height='12' fill='#fde68a' stroke='#92400e'/><rect x='100' y='110' width='100' height='12' fill='#fde68a' stroke='#92400e'/><ellipse cx='150' cy='100' rx='40' ry='8' fill='#f472b6' stroke='#831843' stroke-width='2'/>" },
+    alveolar: { vi:"Lưỡi chạm lợi · /t/ /d/ /n/ /s/ /z/ /l/", el:"<rect x='100' y='75' width='100' height='10' fill='#fde68a' stroke='#92400e'/><path d='M80,140 Q150,90 220,140' fill='#f472b6' stroke='#831843' stroke-width='2'/>" },
+    postalveolar: { vi:"Sau lợi · /ʃ/ /ʒ/ /tʃ/ /dʒ/", el:"<rect x='100' y='75' width='100' height='10' fill='#fde68a' stroke='#92400e'/><path d='M80,140 Q160,80 220,140' fill='#f472b6' stroke='#831843' stroke-width='2'/>" },
+    velar: { vi:"Gốc lưỡi-vòm mềm · /k/ /g/ /ŋ/", el:"<path d='M70,80 Q150,60 230,90' fill='none' stroke='#92400e' stroke-width='3'/><path d='M150,150 Q200,120 230,90' fill='#f472b6' stroke='#831843' stroke-width='2'/>" },
+    glottal: { vi:"Thanh hầu/tiếp cận · /h/ /r/ /j/ /w/", el:"<circle cx='220' cy='130' r='25' fill='#fda4af' stroke='#9f1239' stroke-width='2'/><path d='M70,140 L180,140' stroke='#831843' stroke-width='2'/>" },
+    vowel_close_front: { vi:"Lưỡi cao trước · /iː/ /ɪ/", el:"<ellipse cx='150' cy='110' rx='90' ry='15' fill='#fef3c7' stroke='#b91c1c' stroke-width='2'/><path d='M70,135 Q150,90 230,135' fill='#f472b6' stroke='#831843' stroke-width='2'/>" },
+    vowel_open_front: { vi:"Lưỡi giữa-thấp trước · /e/ /æ/ /ə/ /ɜː/", el:"<ellipse cx='150' cy='115' rx='95' ry='28' fill='#fef3c7' stroke='#b91c1c' stroke-width='2'/><path d='M80,140 Q150,115 220,140' fill='#f472b6' stroke='#831843' stroke-width='2'/>" },
+    vowel_back_round: { vi:"Lưỡi sau, môi tròn · /uː/ /ʊ/ /ɔː/ /ɒ/", el:"<circle cx='150' cy='110' r='35' fill='#fef3c7' stroke='#b91c1c' stroke-width='3'/><circle cx='150' cy='110' r='18' fill='#0f172a'/>" },
+    vowel_open_back: { vi:"Lưỡi sau, mở · /ɑː/ /ʌ/", el:"<ellipse cx='150' cy='115' rx='100' ry='40' fill='#fef3c7' stroke='#b91c1c' stroke-width='2'/><ellipse cx='150' cy='120' rx='40' ry='25' fill='#0f172a'/>" },
+    diphthong: { vi:"Nguyên âm đôi (chuyển động)", el:"<defs><marker id='arrow' markerWidth='10' markerHeight='10' refX='8' refY='3' orient='auto'><polygon points='0,0 8,3 0,6' fill='#6366f1'/></marker></defs><ellipse cx='100' cy='110' rx='40' ry='20' fill='#fef3c7' stroke='#b91c1c' stroke-width='2'/><ellipse cx='220' cy='110' rx='30' ry='15' fill='#fde68a' stroke='#b91c1c' stroke-width='2'/><path d='M140,110 L185,110' stroke='#6366f1' stroke-width='3' marker-end='url(#arrow)'/>" }
+  };
+  const data = labels[group] || labels.glottal;
+  return `<svg viewBox="0 0 300 200" xmlns="http://www.w3.org/2000/svg" style="width:100%;max-width:280px;height:auto;">
+    <rect x="10" y="20" width="280" height="160" rx="12" fill="#fef9c3" stroke="#fbbf24" stroke-width="2"/>
+    <text x="150" y="40" text-anchor="middle" font-size="11" font-weight="bold" fill="#92400e">${data.vi}</text>
+    ${data.el}
+    <text x="150" y="190" text-anchor="middle" font-size="9" fill="#64748b">Mouth diagram · Khẩu hình</text>
+  </svg>`;
+}
+
+/* ============================================================
+   ỨNG DỤNG CHÍNH
+   ============================================================ */
+const grid = document.getElementById('grid');
+const modal = document.getElementById('modal');
+const modalBody = document.getElementById('modalBody');
+document.getElementById('closeModal').onclick = () => modal.classList.add('hidden');
+modal.addEventListener('click', e => { if (e.target === modal) modal.classList.add('hidden'); });
+
+function renderGrid(filter='all') {
+  grid.innerHTML = '';
+  IPA_DATA.filter(s => filter==='all' || s.category===filter).forEach(s => {
+    const card = document.createElement('div');
+    card.className = 'card'; card.dataset.cat = s.category;
+    card.innerHTML = `
+      <div class="chapter">Chương ${s.id} · Chapter ${s.id}</div>
+      <div class="symbol">/${s.symbol}/</div>
+      <div class="example">${s.example} ${s.exampleIPA}</div>
+      <div class="example-vi">${s.exampleVI.replace(/\(.+\)/,'').trim()}</div>
+      <button class="quick-listen" title="Nghe nhanh">▶</button>
+    `;
+    card.querySelector('.quick-listen').onclick = e => { e.stopPropagation(); speakWord(s.example); };
+    card.onclick = () => openDetail(s);
+    grid.appendChild(card);
+  });
+}
+
+document.querySelectorAll('.filter-btn').forEach(btn => {
+  btn.onclick = () => {
+    document.querySelectorAll('.filter-btn').forEach(b => b.classList.remove('active'));
+    btn.classList.add('active');
+    renderGrid(btn.dataset.filter);
+  };
+});
+
+/* ----- Phát âm dùng Web Speech API ----- */
+function speakWord(text, rate=0.85) {
+  if (!('speechSynthesis' in window)) { alert('Trình duyệt không hỗ trợ Web Speech API'); return; }
+  speechSynthesis.cancel();
+  const u = new SpeechSynthesisUtterance(text);
+  u.lang = 'en-GB'; u.rate = rate; u.pitch = 1;
+  const voices = speechSynthesis.getVoices();
+  const en = voices.find(v=>v.lang.startsWith('en-GB')) || voices.find(v=>v.lang.startsWith('en'));
+  if (en) u.voice = en;
+  speechSynthesis.speak(u);
+}
+
+/* ----- Ghi âm + phân tích phía client ----- */
+let mediaRecorder=null, audioChunks=[], recordedBlob=null;
+let refBuffer=null, recBuffer=null;
+let currentSound=null;
+
+function openDetail(s) {
+  currentSound = s;
+  modal.classList.remove('hidden');
+  const cat = CATEGORY_LABEL[s.category];
+
+  modalBody.innerHTML = `
+    <div class="detail-header">
+      <div class="big-symbol">/${s.symbol}/</div>
+      <div>
+        <div class="badge">Chương ${s.id} · Chapter ${s.id}</div>
+        <h2>${cat.vi} · ${cat.en}</h2>
+        <p><b>${s.example}</b> ${s.exampleIPA} — ${s.exampleVI}</p>
+      </div>
+    </div>
+    <div class="detail-body">
+      <div class="section">
+        <h3>Khẩu hình miệng · Mouth Position</h3>
+        <div class="mouth-svg-wrap">${mouthSVG(s.group)}</div>
+      </div>
+      <div class="section">
+        <h3>Mô tả · Description</h3>
+        <p>🇬🇧 ${s.descriptionEN}</p>
+        <p class="vi">🇻🇳 ${s.descriptionVI}</p>
+        <div class="tip">💡 <b>Mẹo phát âm:</b> ${s.tipVI}</div>
+        <div class="btn-row">
+          <button class="btn btn-primary" id="btnPlayWord">🔊 Nghe từ "${s.example}"</button>
+          <button class="btn btn-secondary" id="btnPlaySlow">🐢 Đọc chậm</button>
+        </div>
+      </div>
+
+      <div class="section practice-block">
+        <h3>Luyện ghi âm · Record &amp; Compare</h3>
+        <p style="font-size:12px;color:var(--muted)">
+          Bước 1: Bấm <b>🎯 Ghi mẫu chuẩn</b> để hệ thống thu giọng TTS làm chuẩn.
+          Bước 2: Bấm <b>🔴 Bắt đầu ghi âm</b>, đọc to từ <b>"${s.example}"</b>.
+          Bước 3: Bấm <b>📊 Phân tích</b> để xem điểm.
+        </p>
+        <div class="btn-row">
+          <button class="btn btn-primary" id="btnCaptureRef">🎯 Ghi mẫu chuẩn (TTS)</button>
+          <button class="btn btn-record" id="btnRecord">🔴 Bắt đầu ghi âm</button>
+          <button class="btn btn-secondary" id="btnPlayRec" disabled>▶ Nghe lại</button>
+          <button class="btn btn-primary" id="btnAnalyze" disabled>📊 Phân tích</button>
+        </div>
+        <div class="status" id="recStatus">Sẵn sàng · Ready</div>
+
+        <div class="canvas-wrapper">
+          <div class="canvas-label">📈 Waveform: chuẩn (xanh) vs bạn (hồng)</div>
+          <canvas id="waveCanvas" width="800" height="140"></canvas>
+        </div>
+        <div class="canvas-wrapper">
+          <div class="canvas-label">🎛 Spectrogram chuẩn · Reference</div>
+          <canvas class="spectrogram" id="specRef" width="800" height="200"></canvas>
+        </div>
+        <div class="canvas-wrapper">
+          <div class="canvas-label">🎛 Spectrogram của bạn · Your recording</div>
+          <canvas class="spectrogram" id="specRec" width="800" height="200"></canvas>
+        </div>
+
+        <div class="score-box hidden" id="scoreBox">
+          <div class="score-label">Điểm tương đồng · Similarity Score</div>
+          <div class="score-num" id="scoreNum">0</div>
+          <div class="score-bar"><div class="score-fill" id="scoreFill" style="width:0%"></div></div>
+          <div class="score-feedback" id="scoreFeedback"></div>
+        </div>
+      </div>
+    </div>
+  `;
+
+  audioChunks=[]; recordedBlob=null; refBuffer=null; recBuffer=null;
+
+  document.getElementById('btnPlayWord').onclick = () => speakWord(s.example);
+  document.getElementById('btnPlaySlow').onclick = () => speakWord(s.example, 0.55);
+  document.getElementById('btnRecord').onclick = toggleRecord;
+  document.getElementById('btnPlayRec').onclick = playRecorded;
+  document.getElementById('btnCaptureRef').onclick = captureReferenceFromTTS;
+  document.getElementById('btnAnalyze').onclick = analyzePronunciation;
+}
+
+/* ----- Thu mẫu chuẩn từ TTS qua mic ----- */
+async function captureReferenceFromTTS() {
+  const status = document.getElementById('recStatus');
+  status.textContent = '🔊 Đang phát mẫu để thu sóng âm chuẩn... Vui lòng giữ yên lặng.';
+  try {
+    if (!navigator.mediaDevices || !navigator.mediaDevices.getUserMedia) throw new Error('no mic');
+    const stream = await navigator.mediaDevices.getUserMedia({ audio: true });
+    const recorder = new MediaRecorder(stream);
+    const chunks = [];
+    recorder.ondataavailable = e => chunks.push(e.data);
+    recorder.onstop = async () => {
+      stream.getTracks().forEach(t => t.stop());
+      const blob = new Blob(chunks, { type:'audio/webm' });
+      try {
+        const buf = await blobToAudioBuffer(blob);
+        refBuffer = buf;
+        drawWaveform(buf, 'ref');
+        drawSpectrogram(buf, 'specRef');
+        status.textContent = '✅ Đã ghi mẫu chuẩn. Giờ bấm 🔴 để đọc theo.';
+      } catch(err){ status.textContent = '⚠ Không decode được mẫu, dùng giả lập.'; refBuffer = synthFakeReference(currentSound.example); drawWaveform(refBuffer,'ref'); drawSpectrogram(refBuffer,'specRef'); }
+    };
+    recorder.start();
+    speakWord(currentSound.example, 0.85);
+    const duration = Math.max(1500, currentSound.example.length * 220);
+    setTimeout(() => { try{recorder.stop();}catch(e){} }, duration);
+  } catch (e) {
+    status.textContent = '⚠ Không truy cập mic. Dùng mẫu giả lập để vẽ tham khảo.';
+    refBuffer = synthFakeReference(currentSound.example);
+    drawWaveform(refBuffer, 'ref');
+    drawSpectrogram(refBuffer, 'specRef');
+    speakWord(currentSound.example);
+  }
+}
+
+function synthFakeReference(word) {
+  const sr = 16000;
+  const dur = Math.max(0.6, word.length * 0.12);
+  const n = Math.floor(sr * dur);
+  const ctx = new (window.AudioContext||window.webkitAudioContext)();
+  const buf = ctx.createBuffer(1, n, sr);
+  const ch = buf.getChannelData(0);
+  for (let i = 0; i < n; i++) {
+    const t = i/sr;
+    const env = Math.sin(Math.PI*t/dur) * (0.6 + 0.4*Math.sin(t*8));
+    ch[i] = env * (0.5*Math.sin(2*Math.PI*200*t) + 0.3*Math.sin(2*Math.PI*800*t) + 0.2*Math.sin(2*Math.PI*1500*t));
+  }
+  return buf;
+}
+
+async function blobToAudioBuffer(blob) {
+  const arr = await blob.arrayBuffer();
+  const ctx = new (window.AudioContext||window.webkitAudioContext)();
+  return await ctx.decodeAudioData(arr);
+}
+
+async function toggleRecord() {
+  const btn = document.getElementById('btnRecord');
+  const status = document.getElementById('recStatus');
+  if (mediaRecorder && mediaRecorder.state==='recording') {
+    mediaRecorder.stop();
+    btn.classList.remove('recording');
+    btn.textContent = '🔴 Bắt đầu ghi âm';
+    return;
+  }
+  try {
+    const stream = await navigator.mediaDevices.getUserMedia({ audio: true });
+    mediaRecorder = new MediaRecorder(stream);
+    audioChunks = [];
+    mediaRecorder.ondataavailable = e => audioChunks.push(e.data);
+    mediaRecorder.onstop = async () => {
+      stream.getTracks().forEach(t => t.stop());
+      recordedBlob = new Blob(audioChunks, { type:'audio/webm' });
+      try {
+        recBuffer = await blobToAudioBuffer(recordedBlob);
+        drawWaveform(recBuffer, 'rec');
+        drawSpectrogram(recBuffer, 'specRec');
+        document.getElementById('btnPlayRec').disabled = false;
+        document.getElementById('btnAnalyze').disabled = false;
+        status.textContent = '✅ Đã ghi xong! Bấm 📊 để xem điểm.';
+      } catch (err) { status.textContent = '❌ Lỗi giải mã: '+err.message; }
+    };
+    mediaRecorder.start();
+    btn.classList.add('recording');
+    btn.textContent = '⏹ Dừng ghi âm';
+    status.textContent = '🎙 Đang ghi âm... Đọc to vào microphone.';
+  } catch (e) {
+    status.textContent = '❌ Không truy cập mic: ' + e.message;
+    status.classList.add('error');
+  }
+}
+
+function playRecorded() {
+  if (!recordedBlob) return;
+  new Audio(URL.createObjectURL(recordedBlob)).play();
+}
+
+/* ----- Vẽ Waveform (overlay 2 sóng) ----- */
+function drawWaveform(buf, who) {
+  const cv = document.getElementById('waveCanvas');
+  const ctx = cv.getContext('2d');
+  const W = cv.width, H = cv.height;
+  if (who==='ref') ctx.clearRect(0,0,W,H);
+  const data = buf.getChannelData(0);
+  const step = Math.ceil(data.length / W);
+  const amp = H/2;
+  ctx.lineWidth = 1.2;
+  ctx.strokeStyle = who==='ref' ? '#22d3ee' : '#f472b6';
+  ctx.globalAlpha = 0.85;
+  ctx.beginPath();
+  for (let i = 0; i < W; i++) {
+    let mn=1, mx=-1;
+    for (let j = 0; j < step; j++) { const v=data[i*step+j]||0; if (v<mn) mn=v; if (v>mx) mx=v; }
+    ctx.moveTo(i, (1+mn)*amp); ctx.lineTo(i, (1+mx)*amp);
+  }
+  ctx.stroke();
+  ctx.globalAlpha = 1;
+  ctx.strokeStyle = '#334155';
+  ctx.beginPath(); ctx.moveTo(0,amp); ctx.lineTo(W,amp); ctx.stroke();
+}
+
+/* ----- Spectrogram dùng FFT 512-point ----- */
+function drawSpectrogram(buf, canvasId) {
+  const cv = document.getElementById(canvasId);
+  const ctx = cv.getContext('2d');
+  const W = cv.width, H = cv.height;
+  ctx.fillStyle = '#0f172a'; ctx.fillRect(0,0,W,H);
+  const data = buf.getChannelData(0);
+  const fftSize = 512;
+  const hop = Math.max(1, Math.floor(data.length / W));
+  const numCols = Math.min(W, Math.floor(data.length / hop));
+  for (let x = 0; x < numCols; x++) {
+    const start = x * hop;
+    const slice = new Float32Array(fftSize);
+    for (let i = 0; i < fftSize && start+i < data.length; i++) {
+      const w = 0.5 * (1 - Math.cos(2*Math.PI*i/(fftSize-1)));
+      slice[i] = (data[start+i] || 0) * w;
+    }
+    const mags = simpleFFTMag(slice);
+    const bins = mags.length;
+    for (let y = 0; y < H; y++) {
+      const bin = Math.floor((H-1-y)/H * (bins/2));
+      const m = mags[bin];
+      const db = 20 * Math.log10(m + 1e-6);
+      const intensity = Math.max(0, Math.min(1, (db + 60) / 60));
+      ctx.fillStyle = heatColor(intensity);
+      ctx.fillRect(x, y, 1, 1);
+    }
+  }
+}
+
+function simpleFFTMag(input) {
+  const N = input.length;
+  const re = new Float32Array(input);
+  const im = new Float32Array(N);
+  let j = 0;
+  for (let i = 0; i < N; i++) {
+    if (i<j) { [re[i],re[j]]=[re[j],re[i]]; [im[i],im[j]]=[im[j],im[i]]; }
+    let m = N>>1;
+    while (m>=1 && j>=m) { j-=m; m>>=1; }
+    j += m;
+  }
+  for (let size = 2; size <= N; size <<= 1) {
+    const half = size>>1;
+    const ang = -2*Math.PI/size;
+    for (let i = 0; i < N; i += size) {
+      for (let k = 0; k < half; k++) {
+        const cos = Math.cos(ang*k), sin = Math.sin(ang*k);
+        const tre = re[i+k+half]*cos - im[i+k+half]*sin;
+        const tim = re[i+k+half]*sin + im[i+k+half]*cos;
+        re[i+k+half] = re[i+k] - tre;
+        im[i+k+half] = im[i+k] - tim;
+        re[i+k] += tre; im[i+k] += tim;
+      }
+    }
+  }
+  const mags = new Float32Array(N);
+  for (let i = 0; i < N; i++) mags[i] = Math.sqrt(re[i]*re[i] + im[i]*im[i]);
+  return mags;
+}
+
+function heatColor(t) {
+  const r = Math.round(255 * Math.min(1, Math.max(0, 1.5 - Math.abs(4*t - 3))));
+  const g = Math.round(255 * Math.min(1, Math.max(0, 1.5 - Math.abs(4*t - 2))));
+  const b = Math.round(255 * Math.min(1, Math.max(0, 1.5 - Math.abs(4*t - 1))));
+  return `rgb(${r},${g},${b})`;
+}
+
+/* ----- Phân tích so sánh phía client ----- */
+function trimSilence(arr, threshold=0.01) {
+  let s=0, e=arr.length-1;
+  while (s<arr.length && Math.abs(arr[s])<threshold) s++;
+  while (e>s && Math.abs(arr[e])<threshold) e--;
+  return arr.slice(s, e+1);
+}
+
+function envelope(arr, win=512) {
+  const out = [];
+  for (let i = 0; i < arr.length; i += win) {
+    let m = 0;
+    for (let j = i; j < Math.min(i+win, arr.length); j++) m = Math.max(m, Math.abs(arr[j]));
+    out.push(m);
+  }
+  return out;
+}
+
+function analyzePronunciation() {
+  const status = document.getElementById('recStatus');
+  if (!recBuffer) { status.textContent='Hãy ghi âm trước.'; return; }
+  if (!refBuffer) { status.textContent='Chưa có mẫu chuẩn. Bấm 🎯 trước.'; return; }
+
+  const refArr = trimSilence(refBuffer.getChannelData(0));
+  const recArr = trimSilence(recBuffer.getChannelData(0));
+
+  const e1 = envelope(refArr), e2 = envelope(recArr);
+  const N = 200;
+  const r1 = Array.from({length:N}, (_,i) => e1[Math.floor(i*e1.length/N)] || 0);
+  const r2 = Array.from({length:N}, (_,i) => e2[Math.floor(i*e2.length/N)] || 0);
+
+  const dot = r1.reduce((s,v,i) => s + v*r2[i], 0);
+  const n1 = Math.sqrt(r1.reduce((s,v)=>s+v*v,0));
+  const n2 = Math.sqrt(r2.reduce((s,v)=>s+v*v,0));
+  const cosine = (n1 && n2) ? dot/(n1*n2) : 0;
+
+  const zcr = arr => { let c=0; for (let i=1;i<arr.length;i++) if ((arr[i-1]>=0)!==(arr[i]>=0)) c++; return c/arr.length; };
+  const refZCR = zcr(refArr), recZCR = zcr(recArr);
+  const zcrSim = 1 - Math.min(1, Math.abs(refZCR-recZCR)/Math.max(refZCR,recZCR,0.0001));
+
+  const rms = arr => Math.sqrt(arr.reduce((s,x)=>s+x*x,0)/arr.length);
+  const refRMS = rms(refArr), recRMS = rms(recArr);
+  const rmsSim = 1 - Math.min(1, Math.abs(refRMS-recRMS)/Math.max(refRMS,recRMS,0.0001));
+
+  const score = Math.round(Math.max(0, Math.min(100, (0.6*cosine + 0.25*zcrSim + 0.15*rmsSim) * 100)));
+
+  showScore(score);
+  status.textContent = `✅ Phân tích xong! Cosine: ${cosine.toFixed(2)} · ZCR: ${zcrSim.toFixed(2)} · RMS: ${rmsSim.toFixed(2)}`;
+}
+
+function showScore(score) {
+  const box = document.getElementById('scoreBox');
+  box.classList.remove('hidden');
+  document.getElementById('scoreNum').textContent = score;
+  document.getElementById('scoreFill').style.width = score + '%';
+  let msg = '';
+  if (score>=85) msg = '🌟 Xuất sắc! Phát âm rất giống chuẩn. (Excellent!)';
+  else if (score>=70) msg = '👍 Tốt! Phát âm khá chuẩn. (Good!)';
+  else if (score>=50) msg = '🙂 Khá ổn, hãy luyện thêm về độ dài và độ rõ. (Fair)';
+  else msg = '💪 Cần luyện thêm! Hãy nghe lại mẫu và đọc theo. (Keep trying!)';
+  document.getElementById('scoreFeedback').textContent = msg;
+}
+
+renderGrid('all');
+if ('speechSynthesis' in window) speechSynthesis.onvoiceschanged = () => {};
+</script>
+</body>
+</html>
